@@ -1,0 +1,108 @@
+*ssc install synth
+
+*synthetic controls
+tsset id year, year
+
+synth femlabor femlabor(1990) femlabor(1992) femlabor(1994) femlabor(1996) femlabor(1998) femlabor(2000) femlabor(2002) educ(1998) educ(2001) govex(2000) govex(2003), trunit(14) trperiod(2004) keep(synth_malaysia.dta) replace fig
+
+mat list e(V_matrix)
+
+*Plotting graph of predicted errors
+preserve
+use synth_malaysia.dta, clear
+keep _Y_treated _Y_synthetic _time
+drop if _time==.
+rename _time year
+rename _Y_treated treat
+rename _Y_ counterfactual
+gen gapken=treat-counterfact
+sort year
+twoway (line gapken year,lp(solid)lw(vthin)lcolor(black)), yline(0, lpattern(shortdash) lcolor(black)) xline(2004, lpattern(shortdash) lcolor(black)) xtitle("",si(medsmall)) xlabel(#10) ytitle("Gap in FemLabor prediction error", size(medsmall))
+save synth_malaysia2.dta
+restore 
+
+*Placebo Test
+cd "/Users/francescastamaria/Desktop"
+use Asia_Data1.dta, clear
+tsset id year, year
+
+#delimit;
+set more off;
+local id 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28;
+
+foreach i of local id {;
+	synth 	femlabor femlabor(1990) femlabor(1992) femlabor(1994) femlabor(1996) femlabor(1998) femlabor(2000) femlabor(2002) educ(1998) educ(2001) govex(2000) govex(2003), trunit(`i') trperiod(2004) keep(synth_malaysia_`i'.dta) replace; matrix country`i' = e(RMSPE); /*check the V matrix*/
+			};
+
+foreach i of local id {;
+matrix rownames country`i'=`i';
+matlist country`i', names(rows);
+};
+
+#delimit cr
+
+local id 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28
+
+foreach i of local id {
+		use synth_malaysia_`i'.dta, clear
+		keep _Y_treated _Y_synthetic _time
+		drop if _time==.
+		rename _time year
+		rename _Y_treated treat`i'
+		rename _Y_synthetic counterfactual`i'
+		gen gap`i'=treat`i'-counterfactual`i'
+		sort year
+		save synth_gap_malaysia`i'.dta, replace
+}
+
+use synth_gap_malaysia14.dta, clear
+sort year
+save placebo_malaysia14.dta, replace
+
+foreach i of local id {
+				merge year using synth_gap_malaysia`i'.dta
+				drop _merge
+				sort year
+				
+		save placebo_malaysia.dta, replace
+}
+
+*all placebos on the same graph*
+use placebo_malaysia.dta, replace
+
+#delimit;
+
+twoway
+(line gap1 year ,lp(solid)lw(vthin))
+(line gap2 year ,lp(solid)lw(vthin))
+(line gap3 year ,lp(solid)lw(vthin))
+(line gap4 year ,lp(solid)lw(vthin))
+(line gap5 year ,lp(solid)lw(vthin))
+(line gap6 year ,lp(solid)lw(vthin))
+(line gap7 year ,lp(solid)lw(vthin))
+(line gap8 year ,lp(solid)lw(vthin))
+(line gap9 year ,lp(solid)lw(vthin))
+(line gap10 year ,lp(solid)lw(vthin))
+(line gap11 year ,lp(solid)lw(vthin))
+(line gap12 year ,lp(solid)lw(vthin))
+(line gap13 year ,lp(solid)lw(vthin))
+(line gap15 year ,lp(solid)lw(vthin))
+(line gap16 year ,lp(solid)lw(vthin))
+(line gap17 year ,lp(solid)lw(vthin))
+(line gap18 year ,lp(solid)lw(vthin))
+(line gap19 year ,lp(solid)lw(vthin))
+(line gap20 year ,lp(solid)lw(vthin))
+(line gap21 year ,lp(solid)lw(vthin))
+(line gap22 year ,lp(solid)lw(vthin))
+(line gap23 year ,lp(solid)lw(vthin))
+(line gap24 year ,lp(solid)lw(vthin))
+(line gap25 year ,lp(solid)lw(vthin))
+(line gap26 year ,lp(solid)lw(vthin))
+(line gap27 year ,lp(solid)lw(vthin))
+(line gap28 year ,lp(solid)lw(vthin))
+(line gap14 year ,lp(solid)lw(thick) lcolor(black)), /*treatment unit, Malaysia*/
+yline(0, lpattern(shortdash) lcolor(black)) xline(2004, lpattern(shortdash) lcolor(black))
+xtitle("",si(small)) xlabel(#10) ytitle("Gap in FemLabor prediction error", size(small))
+		legend(off);
+		
+#delimit cr
